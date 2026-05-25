@@ -1,103 +1,442 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Strength Prediction ML</title>
+    <title>Concrete Strength Predictor | Premium</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0; 
-            padding: 20px; 
-            background-color: #f4f7f6;
-            color: #333;
+        :root {
+            /* High-End Premium Light Theme */
+            --bg-color: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            --surface-color: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --input-bg: #f1f5f9;
+            --accent-color: #0f172a;
+            --accent-glow: rgba(15, 23, 42, 0.08);
+            --btn-text: #ffffff;
+            --btn-hover: #334155;
+            --shadow-sm: 0 12px 32px rgba(15, 23, 42, 0.04);
+            --shadow-lg: 0 24px 48px rgba(15, 23, 42, 0.08);
+            --gradient-text: linear-gradient(to right, #0f172a, #475569);
         }
-        .container { 
-            max-width: 600px; 
-            margin: 0 auto; 
-            background: #fff; 
-            padding: 30px; 
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+
+        [data-theme="dark"] {
+            /* Ultra-Premium Dark Theme */
+            --bg-color: linear-gradient(135deg, #09090b 0%, #1e1e24 100%);
+            --surface-color: #141415;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border-color: #27272a;
+            --input-bg: #09090b;
+            --accent-color: #ffffff;
+            --accent-glow: rgba(255, 255, 255, 0.08);
+            --btn-text: #09090b;
+            --btn-hover: #e2e8f0;
+            --shadow-sm: 0 16px 40px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.8);
+            --gradient-text: linear-gradient(to right, #ffffff, #cbd5e1);
         }
-        h1 { text-align: center; color: #2c3e50; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: 600; margin-bottom: 5px; color: #34495e; }
-        input[type="number"], input[type="text"] { 
-            width: 100%; 
-            padding: 10px; 
-            box-sizing: border-box; 
-            border: 1px solid #ccc; 
-            border-radius: 4px; 
-            font-size: 14px;
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
-        .optional-group { padding: 15px; background-color: #f8f9fa; border-radius: 5px; border: 1px dashed #ddd; margin-bottom: 15px; }
-        .optional-group h3 { margin-top: 0; font-size: 16px; color: #666; }
-        button { 
-            width: 100%; 
-            padding: 12px; 
-            background-color: #3498db; 
-            color: white; 
-            border: none; 
-            border-radius: 4px;
-            cursor: pointer; 
-            font-size: 16px; 
-            font-weight: bold;
-            transition: background-color 0.3s;
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: color 0.5s ease;
         }
-        button:hover { background-color: #2980b9; }
-        #result { 
-            margin-top: 20px; 
-            padding: 15px; 
-            text-align: center; 
-            font-weight: bold; 
-            font-size: 1.2em; 
-            border-radius: 4px; 
+
+        .container {
+            width: 100%;
+            max-width: 950px;
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            margin: 40px 20px;
+            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            transition: background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+        }
+
+        .hero-banner {
+            width: 100%;
+            height: 220px;
+            background-image: url('concrete-bg.png');
+            background-size: cover;
+            background-position: center 30%;
+            position: relative;
+        }
+
+        .hero-banner::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            background: linear-gradient(to bottom, transparent, var(--surface-color));
+        }
+
+        .content-wrapper {
+            padding: 0 40px 40px 40px;
+            position: relative;
+            margin-top: -30px;
+            z-index: 2;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            letter-spacing: -0.04em;
+            background: var(--gradient-text);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-top: 8px;
+            font-weight: 400;
+        }
+
+        .theme-toggle {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.3rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 2px 10px var(--accent-glow);
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.08) rotate(15deg);
+            border-color: var(--text-secondary);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+        }
+
+        .card {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card-header {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+        }
+
+        /* Floating Label Inputs */
+        .input-group {
+            position: relative;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 24px 16px 10px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .input-group input:hover {
+            border-color: var(--text-secondary);
+        }
+
+        .input-group input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 1px var(--accent-color);
+            background: var(--surface-color);
+        }
+
+        .input-group label {
+            position: absolute;
+            left: 16px;
+            top: 17px;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 400;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+        }
+
+        .input-group input:focus + label,
+        .input-group input:not(:placeholder-shown) + label {
+            transform: translateY(-9px) scale(0.85);
+            transform-origin: left top;
+            color: var(--text-primary);
+        }
+
+        .action-row {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 20px;
+            margin-top: 24px;
+        }
+
+        button.primary-btn, button.secondary-btn {
+            flex: 1;
+            padding: 18px;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            letter-spacing: -0.01em;
+        }
+
+        .primary-btn {
+            background: var(--accent-color);
+            color: var(--btn-text);
+            border: 1px solid transparent;
+            box-shadow: 0 8px 24px var(--accent-glow);
+        }
+
+        .primary-btn:hover {
+            background: var(--btn-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px var(--accent-glow);
+        }
+
+        .secondary-btn {
+            background: var(--input-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .secondary-btn:hover {
+            border-color: var(--text-secondary);
+            background: var(--surface-color);
+            transform: translateY(-2px);
+        }
+
+        #result {
+            grid-column: 1 / -1;
+            margin-top: 20px;
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 1.25rem;
+            font-weight: 500;
+            letter-spacing: -0.02em;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.4s ease;
             display: none;
         }
-        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        #result.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .success {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid #10b981;
+            color: var(--text-primary);
+        }
+
+        .error {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid #ef4444;
+            color: var(--text-primary);
+        }
+
+        @media (max-width: 768px) {
+            .form-grid { grid-template-columns: 1fr; gap: 40px; }
+            .action-row { flex-direction: column; }
+            .content-wrapper { padding: 0 20px 30px 20px; }
+            h1 { font-size: 2.2rem; }
+            .hero-banner { height: 160px; }
+        }
     </style>
 </head>
 <body>
+
     <div class="container">
-        <h1>Predict Concrete Strength</h1>
-        <form id="predictionForm">
-            <div class="form-group"><label>Cement</label><input type="number" id="cement" step="any" required placeholder="e.g. 350"></div>
-            <div class="form-group"><label>Sand</label><input type="number" id="sand" step="any" required placeholder="e.g. 800"></div>
-            <div class="form-group"><label>Water</label><input type="number" id="water" step="any" required placeholder="e.g. 150"></div>
-            <div class="form-group"><label>NCA (Natural Coarse Aggregate)</label><input type="number" id="nca" step="any" required placeholder="e.g. 1000"></div>
-            <div class="form-group"><label>RCA (Recycled Coarse Aggregate)</label><input type="number" id="rca" step="any" required placeholder="e.g. 200"></div>
-            <div class="form-group"><label>W/C (Water to Cement Ratio)</label><input type="number" id="w_c" step="any" required placeholder="e.g. 0.45"></div>
-            
-            <div class="optional-group">
-                <h3>Optional Fields (Leave blank if unknown)</h3>
-                <div class="form-group"><label>Shape Factor</label><input type="number" id="shape_factor" step="any"></div>
-                <div class="form-group"><label>Density</label><input type="number" id="density" step="any"></div>
-                <div class="form-group"><label>Slump</label><input type="number" id="slump" step="any"></div>
-                <div class="form-group"><label>Width / Dia</label><input type="number" id="width_dia" step="any"></div>
-                <div class="form-group"><label>Length</label><input type="number" id="length" step="any"></div>
-                <div class="form-group"><label>C/S Area</label><input type="number" id="cs_area" step="any"></div>
-                <div class="form-group"><label>Ultimate Load</label><input type="number" id="ultimate_load" step="any"></div>
-            </div>
-            
-            <div style="display: flex; gap: 10px;">
-                <button type="submit" style="flex: 1;">Predict Strength</button>
-                <button type="button" id="randomBtn" style="flex: 1; background-color: #27ae60;">Fill Random Data</button>
-            </div>
-        </form>
+        <div class="hero-banner"></div>
         
-        <div id="result"></div>
+        <div class="content-wrapper">
+            <div class="header">
+                <div>
+                    <h1>Concrete Strength Predictor</h1>
+                </div>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle Theme">
+                    <i class="ph ph-moon"></i>
+                </button>
+            </div>
+
+            <form id="predictionForm" class="form-grid">
+                
+                <!-- Card 1 -->
+                <div class="card">
+                    <div class="card-header"><i class="ph ph-cube"></i> Mixture Proportions</div>
+                    <div class="input-group">
+                        <input type="number" id="cement" step="any" required placeholder=" ">
+                        <label for="cement">Cement</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="number" id="sand" step="any" required placeholder=" ">
+                        <label for="sand">Sand</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="number" id="water" step="any" required placeholder=" ">
+                        <label for="water">Water</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="number" id="nca" step="any" required placeholder=" ">
+                        <label for="nca">Natural Aggregate (NCA)</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="number" id="rca" step="any" required placeholder=" ">
+                        <label for="rca">Recycled Aggregate (RCA)</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="number" id="w_c" step="any" required placeholder=" ">
+                        <label for="w_c">W/C Ratio</label>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="card">
+                    <div class="card-header"><i class="ph ph-faders"></i> Physical Properties (Optional)</div>
+                    <div class="input-group">
+                        <input type="number" id="shape_factor" step="any" placeholder=" ">
+                        <label for="shape_factor">Shape Factor</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="number" id="density" step="any" placeholder=" ">
+                        <label for="density">Density</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="number" id="slump" step="any" placeholder=" ">
+                        <label for="slump">Slump</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="number" id="width_dia" step="any" placeholder=" ">
+                        <label for="width_dia">Width / Dia</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="number" id="length" step="any" placeholder=" ">
+                        <label for="length">Length</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="number" id="cs_area" step="any" placeholder=" ">
+                        <label for="cs_area">C/S Area</label>
+                    </div>
+                    <!-- Ultimate load at the bottom -->
+                    <div class="input-group">
+                        <input type="number" id="ultimate_load" step="any" placeholder=" ">
+                        <label for="ultimate_load">Ultimate Load</label>
+                    </div>
+                </div>
+
+                <div class="action-row">
+                    <button type="button" id="randomBtn" class="secondary-btn">
+                        <i class="ph ph-shuffle"></i> Generate Sample Data
+                    </button>
+                    <button type="submit" class="primary-btn">
+                        Predict Strength <i class="ph ph-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div id="result"></div>
+            </form>
+        </div>
     </div>
     
     <script>
+        // Theme Logic
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+        const icon = themeToggle.querySelector('i');
+
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        html.setAttribute('data-theme', savedTheme);
+        updateIcon(savedTheme);
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateIcon(newTheme);
+        });
+
+        function updateIcon(theme) {
+            icon.className = theme === 'dark' ? 'ph ph-sun' : 'ph ph-moon';
+        }
+
+        // Fetch Logic
         document.getElementById('predictionForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const resultDiv = document.getElementById('result');
-            resultDiv.style.display = 'block';
-            resultDiv.innerHTML = "Predicting...";
             resultDiv.className = "";
+            resultDiv.style.display = 'block';
+            setTimeout(() => resultDiv.classList.add('show'), 10);
+            resultDiv.innerHTML = "<i class='ph ph-spinner-gap ph-spin'></i> Processing...";
             
             const data = {
                 cement: parseFloat(document.getElementById('cement').value),
@@ -124,44 +463,55 @@
                 const resultData = await response.json();
                 
                 if (response.ok) {
-                    resultDiv.innerHTML = `Predicted Strength: <strong>${resultData.predicted_strength.toFixed(4)}</strong>`;
-                    resultDiv.className = "success";
+                    resultDiv.innerHTML = `Predicted Compressive Strength: <strong>${resultData.predicted_strength.toFixed(4)}</strong>`;
+                    resultDiv.className = "success show";
                 } else {
                     let errorMsg = resultData.detail;
                     if (Array.isArray(errorMsg)) {
                         errorMsg = errorMsg[0].msg;
                     }
                     resultDiv.innerHTML = `Error: ${errorMsg}`;
-                    resultDiv.className = "error";
+                    resultDiv.className = "error show";
                 }
             } catch (error) {
                 resultDiv.innerHTML = `Network Error: Could not connect to API.`;
-                resultDiv.className = "error";
+                resultDiv.className = "error show";
             }
         });
         
+        // Random Data Generator
         document.getElementById('randomBtn').addEventListener('click', function() {
             const randomInRange = (min, max, decimals=2) => {
                 const val = Math.random() * (max - min) + min;
                 return parseFloat(val.toFixed(decimals));
             };
 
-            document.getElementById('cement').value = randomInRange(250, 450, 1);
-            document.getElementById('sand').value = randomInRange(600, 950, 1);
-            document.getElementById('water').value = randomInRange(130, 220, 1);
-            document.getElementById('nca').value = randomInRange(800, 1200, 1);
-            document.getElementById('rca').value = randomInRange(0, 300, 1);
-            document.getElementById('w_c').value = randomInRange(0.35, 0.65, 2);
+            const fields = {
+                cement: [250, 450, 1],
+                sand: [600, 950, 1],
+                water: [130, 220, 1],
+                nca: [800, 1200, 1],
+                rca: [0, 300, 1],
+                w_c: [0.35, 0.65, 2],
+                shape_factor: [0.8, 1.1, 2],
+                density: [2200, 2500, 1],
+                slump: [10, 120, 0],
+                width_dia: [100, 150, 0],
+                length: [200, 300, 0],
+                cs_area: [10000, 25000, 0],
+                ultimate_load: [100, 500, 1]
+            };
 
-            document.getElementById('shape_factor').value = randomInRange(0.8, 1.1, 2);
-            document.getElementById('density').value = randomInRange(2200, 2500, 1);
-            document.getElementById('slump').value = randomInRange(10, 120, 0);
-            document.getElementById('width_dia').value = randomInRange(100, 150, 0);
-            document.getElementById('length').value = randomInRange(200, 300, 0);
-            document.getElementById('cs_area').value = randomInRange(10000, 25000, 0);
-            document.getElementById('ultimate_load').value = randomInRange(100, 500, 1);
+            for (const [id, [min, max, dec]] of Object.entries(fields)) {
+                document.getElementById(id).value = randomInRange(min, max, dec);
+            }
             
-            document.getElementById('result').style.display = 'none';
+            document.getElementById('result').classList.remove('show');
+            setTimeout(() => {
+                if(!document.getElementById('result').classList.contains('show')) {
+                    document.getElementById('result').style.display = 'none';
+                }
+            }, 400);
         });
     </script>
 </body>
