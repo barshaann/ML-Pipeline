@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from pydantic import BaseModel, Field
 from typing import Optional
 import joblib
@@ -44,6 +44,12 @@ async def read_index():
         return HTMLResponse(content=html_content, status_code=200)
     except FileNotFoundError:
         return HTMLResponse(content="<h1>Error: index.html not found in the current directory.</h1>", status_code=404)
+
+@app.get("/concrete-bg.png")
+async def get_bg_image():
+    if os.path.exists("concrete-bg.png"):
+        return FileResponse("concrete-bg.png")
+    return HTMLResponse(status_code=404)
 
 @app.get("/health")
 def health_check():
