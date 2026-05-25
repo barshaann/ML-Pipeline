@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strength Prediction ML</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: #fff; 
+            padding: 30px; 
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 { text-align: center; color: #2c3e50; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; color: #34495e; }
+        input[type="number"], input[type="text"] { 
+            width: 100%; 
+            padding: 10px; 
+            box-sizing: border-box; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            font-size: 14px;
+        }
+        .optional-group { padding: 15px; background-color: #f8f9fa; border-radius: 5px; border: 1px dashed #ddd; margin-bottom: 15px; }
+        .optional-group h3 { margin-top: 0; font-size: 16px; color: #666; }
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background-color: #3498db; 
+            color: white; 
+            border: none; 
+            border-radius: 4px;
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        button:hover { background-color: #2980b9; }
+        #result { 
+            margin-top: 20px; 
+            padding: 15px; 
+            text-align: center; 
+            font-weight: bold; 
+            font-size: 1.2em; 
+            border-radius: 4px; 
+            display: none;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Predict Concrete Strength</h1>
+        <form id="predictionForm">
+            <div class="form-group"><label>Cement</label><input type="number" id="cement" step="any" required placeholder="e.g. 350"></div>
+            <div class="form-group"><label>Sand</label><input type="number" id="sand" step="any" required placeholder="e.g. 800"></div>
+            <div class="form-group"><label>Water</label><input type="number" id="water" step="any" required placeholder="e.g. 150"></div>
+            <div class="form-group"><label>NCA (Natural Coarse Aggregate)</label><input type="number" id="nca" step="any" required placeholder="e.g. 1000"></div>
+            <div class="form-group"><label>RCA (Recycled Coarse Aggregate)</label><input type="number" id="rca" step="any" required placeholder="e.g. 200"></div>
+            <div class="form-group"><label>W/C (Water to Cement Ratio)</label><input type="number" id="w_c" step="any" required placeholder="e.g. 0.45"></div>
+            
+            <div class="optional-group">
+                <h3>Optional Fields (Leave blank if unknown)</h3>
+                <div class="form-group"><label>Shape Factor</label><input type="number" id="shape_factor" step="any"></div>
+                <div class="form-group"><label>Density</label><input type="number" id="density" step="any"></div>
+                <div class="form-group"><label>Slump</label><input type="number" id="slump" step="any"></div>
+                <div class="form-group"><label>Width / Dia</label><input type="number" id="width_dia" step="any"></div>
+                <div class="form-group"><label>Length</label><input type="number" id="length" step="any"></div>
+                <div class="form-group"><label>C/S Area</label><input type="number" id="cs_area" step="any"></div>
+                <div class="form-group"><label>Ultimate Load</label><input type="number" id="ultimate_load" step="any"></div>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" style="flex: 1;">Predict Strength</button>
+                <button type="button" id="randomBtn" style="flex: 1; background-color: #27ae60;">Fill Random Data</button>
+            </div>
+        </form>
+        
+        <div id="result"></div>
+    </div>
+    
+    <script>
+        document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = "Predicting...";
+            resultDiv.className = "";
+            
+            const data = {
+                cement: parseFloat(document.getElementById('cement').value),
+                sand: parseFloat(document.getElementById('sand').value),
+                water: parseFloat(document.getElementById('water').value),
+                nca: parseFloat(document.getElementById('nca').value),
+                rca: parseFloat(document.getElementById('rca').value),
+                w_c: parseFloat(document.getElementById('w_c').value)
+            };
+            
+            const optionals = ['shape_factor', 'density', 'slump', 'width_dia', 'length', 'cs_area', 'ultimate_load'];
+            optionals.forEach(opt => {
+                const val = document.getElementById(opt).value;
+                if (val !== "") data[opt] = parseFloat(val);
+            });
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const resultData = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `Predicted Strength: <strong>${resultData.predicted_strength.toFixed(4)}</strong>`;
+                    resultDiv.className = "success";
+                } else {
+                    let errorMsg = resultData.detail;
+                    if (Array.isArray(errorMsg)) {
+                        errorMsg = errorMsg[0].msg;
+                    }
+                    resultDiv.innerHTML = `Error: ${errorMsg}`;
+                    resultDiv.className = "error";
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `Network Error: Could not connect to API.`;
+                resultDiv.className = "error";
+            }
+        });
+        
+        document.getElementById('randomBtn').addEventListener('click', function() {
+            const randomInRange = (min, max, decimals=2) => {
+                const val = Math.random() * (max - min) + min;
+                return parseFloat(val.toFixed(decimals));
+            };
+
+            document.getElementById('cement').value = randomInRange(250, 450, 1);
+            document.getElementById('sand').value = randomInRange(600, 950, 1);
+            document.getElementById('water').value = randomInRange(130, 220, 1);
+            document.getElementById('nca').value = randomInRange(800, 1200, 1);
+            document.getElementById('rca').value = randomInRange(0, 300, 1);
+            document.getElementById('w_c').value = randomInRange(0.35, 0.65, 2);
+
+            document.getElementById('shape_factor').value = randomInRange(0.8, 1.1, 2);
+            document.getElementById('density').value = randomInRange(2200, 2500, 1);
+            document.getElementById('slump').value = randomInRange(10, 120, 0);
+            document.getElementById('width_dia').value = randomInRange(100, 150, 0);
+            document.getElementById('length').value = randomInRange(200, 300, 0);
+            document.getElementById('cs_area').value = randomInRange(10000, 25000, 0);
+            document.getElementById('ultimate_load').value = randomInRange(100, 500, 1);
+            
+            document.getElementById('result').style.display = 'none';
+        });
+    </script>
+</body>
+</html>
