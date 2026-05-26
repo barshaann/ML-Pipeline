@@ -387,7 +387,6 @@
                         <input type="number" id="cs_area" step="any" placeholder=" ">
                         <label for="cs_area">C/S Area</label>
                     </div>
-                    <!-- Ultimate load at the bottom -->
                     <div class="input-group">
                         <input type="number" id="ultimate_load" step="any" placeholder=" ">
                         <label for="ultimate_load">Ultimate Load</label>
@@ -413,11 +412,9 @@
         const themeToggle = document.getElementById('themeToggle');
         const html = document.documentElement;
         const icon = themeToggle.querySelector('i');
-
         const savedTheme = localStorage.getItem('theme') || 'dark';
         html.setAttribute('data-theme', savedTheme);
         updateIcon(savedTheme);
-
         themeToggle.addEventListener('click', () => {
             const currentTheme = html.getAttribute('data-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -425,7 +422,6 @@
             localStorage.setItem('theme', newTheme);
             updateIcon(newTheme);
         });
-
         function updateIcon(theme) {
             icon.className = theme === 'dark' ? 'ph ph-sun' : 'ph ph-moon';
         }
@@ -433,86 +429,79 @@
         // Fetch Logic
         document.getElementById('predictionForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
+            const requiredFields = ['cement', 'sand', 'water', 'nca', 'rca', 'w_c'];
+            const hasZero = requiredFields.some(id => {
+                const val = parseFloat(document.getElementById(id).value);
+                return isNaN(val) || val <= 0;
+            });
+
             const resultDiv = document.getElementById('result');
-            resultDiv.className = "";
             resultDiv.style.display = 'block';
             setTimeout(() => resultDiv.classList.add('show'), 10);
+
+            if (hasZero) {
+                resultDiv.innerHTML = `<strong style="color:#ef4444;">Invalid Input: All mixture proportion fields must have a value greater than zero.</strong>`;
+                resultDiv.className = 'error show';
+                return;
+            }
+
+            resultDiv.className = '';
             resultDiv.innerHTML = "<i class='ph ph-spinner-gap ph-spin'></i> Processing...";
-            
+
             const data = {
                 cement: parseFloat(document.getElementById('cement').value),
-                sand: parseFloat(document.getElementById('sand').value),
-                water: parseFloat(document.getElementById('water').value),
-                nca: parseFloat(document.getElementById('nca').value),
-                rca: parseFloat(document.getElementById('rca').value),
-                w_c: parseFloat(document.getElementById('w_c').value)
+                sand:   parseFloat(document.getElementById('sand').value),
+                water:  parseFloat(document.getElementById('water').value),
+                nca:    parseFloat(document.getElementById('nca').value),
+                rca:    parseFloat(document.getElementById('rca').value),
+                w_c:    parseFloat(document.getElementById('w_c').value)
             };
-            
             const optionals = ['shape_factor', 'density', 'slump', 'width_dia', 'length', 'cs_area', 'ultimate_load'];
             optionals.forEach(opt => {
                 const val = document.getElementById(opt).value;
-                if (val !== "") data[opt] = parseFloat(val);
+                if (val !== '') data[opt] = parseFloat(val);
             });
-            
+
             try {
                 const response = await fetch('/predict', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                
                 const resultData = await response.json();
-                
                 if (response.ok) {
                     resultDiv.innerHTML = `Predicted Strength: <strong style="color: #10b981; text-shadow: 0 0 10px rgba(16,185,129,0.5);">${resultData.predicted_strength.toFixed(4)}</strong>`;
-                    resultDiv.className = "success show";
+                    resultDiv.className = 'success show';
                 } else {
                     let errorMsg = resultData.detail;
-                    if (Array.isArray(errorMsg)) {
-                        errorMsg = errorMsg[0].msg;
-                    }
-                    resultDiv.innerHTML = `Error: <strong style="color: #ef4444;">${errorMsg}</strong>`;
-                    resultDiv.className = "error show";
+                    if (Array.isArray(errorMsg)) errorMsg = errorMsg[0].msg;
+                    resultDiv.innerHTML = `Error: <strong style="color:#ef4444;">${errorMsg}</strong>`;
+                    resultDiv.className = 'error show';
                 }
             } catch (error) {
-                resultDiv.innerHTML = `Network Error: Could not connect to API.`;
-                resultDiv.className = "error show";
+                resultDiv.innerHTML = 'Network Error: Could not connect to API.';
+                resultDiv.className = 'error show';
             }
         });
-        
+
         // Random Data Generator
         document.getElementById('randomBtn').addEventListener('click', function() {
-            const randomInRange = (min, max, decimals=2) => {
-                const val = Math.random() * (max - min) + min;
-                return parseFloat(val.toFixed(decimals));
-            };
-
+            const randomInRange = (min, max, decimals=2) => parseFloat((Math.random() * (max - min) + min).toFixed(decimals));
             const fields = {
-                cement: [250, 450, 1],
-                sand: [600, 950, 1],
-                water: [130, 220, 1],
-                nca: [800, 1200, 1],
-                rca: [0, 300, 1],
-                w_c: [0.35, 0.65, 2],
-                shape_factor: [0.8, 1.1, 2],
-                density: [2200, 2500, 1],
-                slump: [10, 120, 0],
-                width_dia: [100, 150, 0],
-                length: [200, 300, 0],
-                cs_area: [10000, 25000, 0],
-                ultimate_load: [100, 500, 1]
+                cement: [277, 420, 1], sand: [275, 885, 1], water: [111, 258, 1],
+                nca: [100, 1200, 1], rca: [0.1, 1, 2], w_c: [0.40, 0.70, 2],
+                shape_factor: [2, 10, 1], density: [2233, 2600, 1], slump: [50, 715, 0],
+                width_dia: [100, 240, 0], length: [200, 2400, 0],
+                cs_area: [7854, 57600, 0], ultimate_load: [196, 4064, 1]
             };
-
             for (const [id, [min, max, dec]] of Object.entries(fields)) {
                 document.getElementById(id).value = randomInRange(min, max, dec);
             }
-            
             document.getElementById('result').classList.remove('show');
             setTimeout(() => {
-                if(!document.getElementById('result').classList.contains('show')) {
+                if (!document.getElementById('result').classList.contains('show'))
                     document.getElementById('result').style.display = 'none';
-                }
             }, 400);
         });
     </script>

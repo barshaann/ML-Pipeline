@@ -61,7 +61,15 @@ def health_check():
 def predict_strength(input_data: PredictionInput):
     if model_pipeline is None:
         raise HTTPException(status_code=500, detail="Model is not loaded on the server. Please run the training script first.")
+
     data_dict = input_data.model_dump()
+
+    required_fields = ["cement", "sand", "water", "nca", "w_c"]
+    for field in required_fields:
+        val = data_dict.get(field)
+        if val is None or val <= 0:
+            raise HTTPException(status_code=422, detail=f"Invalid input: '{field}' must be greater than zero.")
+
     df = pd.DataFrame([data_dict])
     try:
         prediction = model_pipeline.predict(df)
