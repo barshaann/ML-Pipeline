@@ -27,6 +27,7 @@ class PredictionInput(BaseModel):
     sand: float = Field(..., description="Amount of sand")
     water: float = Field(..., description="Amount of water")
     nca: float = Field(..., description="Natural coarse aggregate")
+    tca: float = Field(..., description="Total coarse aggregate")
     rca: float = Field(..., description="Recycled coarse aggregate")
     w_c: float = Field(..., description="Water to cement ratio")
     shape_factor: Optional[float] = None
@@ -64,19 +65,28 @@ def predict_strength(input_data: PredictionInput):
 
     data_dict = input_data.model_dump()
 
-    required_fields = ["cement", "sand", "water", "nca", "w_c", "cs_area"]
+    required_fields = ["cement", "sand", "water", "w_c", "cs_area", "tca"]
     for field in required_fields:
         val = data_dict.get(field)
         if val is None or val <= 0:
             raise HTTPException(status_code=422, detail=f"Invalid input: '{field}' must be greater than zero.")
+            
+    nca_val = data_dict.get("nca")
+    if nca_val is None or nca_val < 0:
+        raise HTTPException(status_code=422, detail="Invalid input: 'nca' cannot be negative.")
 
     # --- Ultimate Physics Fix for RCA ---
     # To completely neutralize the spurious dataset correlation, 
-    # we force the model to evaluate the mix as pristine (RCA = 0.0),
-    # which gives the peak baseline strength.
+    # we force the model to evaluate the mix as pristine (RCA = 0.0).
+    # In a pristine mix, the Natural Aggregate is equal to the Total Coarse Aggregate (tca).
     true_rca = data_dict.get("rca", 0.0)
     model_input_data = data_dict.copy()
     model_input_data["rca"] = 0.0  # Always pass 0.0 to ML model
+    model_input_data["nca"] = data_dict.get("tca", model_input_data["nca"]) # Set NCA to Total Coarse Aggregate
+    
+    # Remove tca before passing to the model pipeline since it's not a model feature
+    if "tca" in model_input_data:
+        del model_input_data["tca"]
         
     df = pd.DataFrame([model_input_data])
     try:
@@ -88,11 +98,12 @@ def predict_strength(input_data: PredictionInput):
         if true_rca <= 0.40:
             # 0 to 40% RCA: Fluctuating drop using cosine wave 
             # Ensures 0 is absolute max, but 20% might be higher than 10% or 30%
-            penalty = (true_rca * 0.05) + 0.015 * (1 - math.cos(true_rca * 25))
+            # Drop reaches ~6.76% at exactly 40% RCA
+            penalty = (true_rca * 0.10) + 0.015 * (1 - math.cos(true_rca * 25))
         else:
-            # > 40% RCA: Steep sharp drop (up to ~44% drop at 100% RCA)
-            # 0.0475 is approx the penalty exactly at 0.40
-            penalty = 0.0475 + ((true_rca - 0.40) * 0.65)
+            # > 40% RCA: Steep sharp drop (up to ~41% drop at 100% RCA)
+            # 0.0676 is approx the penalty exactly at 0.40
+            penalty = 0.0676 + ((true_rca - 0.40) * 0.57)
             
         ultimate_load = ultimate_load * (1 - penalty)
         # ------------------------------------

@@ -357,12 +357,16 @@
                         <label for="water">Water</label>
                     </div>
                     <div class="input-group">
-                        <input type="number" id="nca" step="any" required placeholder=" ">
-                        <label for="nca">Natural Aggregate (NCA)</label>
+                        <input type="number" id="tca" step="any" required placeholder=" ">
+                        <label for="tca">Total Coarse Aggregate</label>
                     </div>
                     <div class="input-group">
-                        <input type="number" id="rca" step="any" required placeholder=" ">
-                        <label for="rca">Recycled Aggregate (RCA)</label>
+                        <input type="number" id="rca_percent" step="any" required placeholder=" " min="0" max="100">
+                        <label for="rca_percent">RCA Percentage (%)</label>
+                    </div>
+                    <div class="input-group" style="opacity: 0.75;">
+                        <input type="number" id="nca" step="any" readonly placeholder=" " style="background: var(--bg-color); cursor: not-allowed; border-color: transparent;">
+                        <label for="nca">NCA Percentage (%)</label>
                     </div>
                     <div class="input-group">
                         <input type="number" id="w_c" step="any" required placeholder=" ">
@@ -437,30 +441,45 @@
             icon.className = theme === 'dark' ? 'ph ph-sun' : 'ph ph-moon';
         }
 
+        // Auto-calculate NCA based on TCA and RCA %
+        const tcaInput = document.getElementById('tca');
+        const rcaPercentInput = document.getElementById('rca_percent');
+        const ncaInput = document.getElementById('nca');
+
+        function updateNCA() {
+            const rcaPercent = parseFloat(rcaPercentInput.value) || 0;
+            // NCA is now just the remaining percentage
+            const ncaPercent = 100 - rcaPercent;
+            ncaInput.value = ncaPercent.toFixed(0);
+        }
+
+        tcaInput.addEventListener('input', updateNCA);
+        rcaPercentInput.addEventListener('input', updateNCA);
+
         // Fetch Logic
         document.getElementById('predictionForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const requiredStrict = ['cement', 'sand', 'water', 'nca', 'w_c', 'cs_area'];
+            const requiredStrict = ['cement', 'sand', 'water', 'tca', 'w_c', 'cs_area'];
             const hasZero = requiredStrict.some(id => {
                 const val = parseFloat(document.getElementById(id).value);
                 return isNaN(val) || val <= 0;
             });
             
-            const rcaVal = parseFloat(document.getElementById('rca').value);
-            const rcaInvalid = isNaN(rcaVal) || rcaVal < 0;
+            const rcaVal = parseFloat(document.getElementById('rca_percent').value);
+            const rcaInvalid = isNaN(rcaVal) || rcaVal < 0 || rcaVal > 100;
 
             const resultDiv = document.getElementById('result');
             resultDiv.style.display = 'block';
             setTimeout(() => resultDiv.classList.add('show'), 10);
 
             if (hasZero) {
-                resultDiv.innerHTML = `<strong style="color:#ef4444;">Invalid Input: Cement, Sand, Water, NCA, W/C Ratio, and C/S Area MUST be greater than 0.</strong>`;
+                resultDiv.innerHTML = `<strong style="color:#ef4444;">Invalid Input: Cement, Sand, Water, Total Coarse Aggregate, W/C Ratio, and C/S Area MUST be greater than 0.</strong>`;
                 resultDiv.className = 'error show';
                 return;
             }
             if (rcaInvalid) {
-                resultDiv.innerHTML = `<strong style="color:#ef4444;">Invalid Input: Recycled Aggregate (RCA) cannot be negative.</strong>`;
+                resultDiv.innerHTML = `<strong style="color:#ef4444;">Invalid Input: RCA Percentage must be between 0 and 100.</strong>`;
                 resultDiv.className = 'error show';
                 return;
             }
@@ -468,12 +487,17 @@
             resultDiv.className = '';
             resultDiv.innerHTML = "<i class='ph ph-spinner-gap ph-spin'></i> Processing...";
 
+            const tcaVal = parseFloat(document.getElementById('tca').value);
+            const ncaPercentVal = parseFloat(document.getElementById('nca').value) || 0;
+            const actualNcaWeight = tcaVal * (ncaPercentVal / 100.0);
+
             const data = {
                 cement: parseFloat(document.getElementById('cement').value),
                 sand:   parseFloat(document.getElementById('sand').value),
                 water:  parseFloat(document.getElementById('water').value),
-                nca:    parseFloat(document.getElementById('nca').value),
-                rca:    parseFloat(document.getElementById('rca').value),
+                tca:    tcaVal,
+                nca:    actualNcaWeight,
+                rca:    parseFloat(document.getElementById('rca_percent').value) / 100.0,
                 w_c:    parseFloat(document.getElementById('w_c').value),
                 cs_area: parseFloat(document.getElementById('cs_area').value)
             };
@@ -527,12 +551,16 @@
             const rcaRatios = [0.0, 0.02, 0.04, 0.06, 0.08, 0.10, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50, 0.60, 0.75, 1.0];
             const rcaRatio = rcaRatios[Math.floor(Math.random() * rcaRatios.length)];
             
+            const baseTCA = selected.nca / (1 - selected.rca);
+            
             document.getElementById('cement').value = noise(selected.cement).toFixed(1);
             document.getElementById('sand').value = noise(selected.sand).toFixed(1);
             document.getElementById('water').value = noise(selected.water).toFixed(1);
-            document.getElementById('nca').value = noise(selected.nca).toFixed(1);
-            document.getElementById('rca').value = rcaRatio.toFixed(2);
+            document.getElementById('tca').value = noise(baseTCA).toFixed(1);
+            document.getElementById('rca_percent').value = (rcaRatio * 100).toFixed(0);
             document.getElementById('w_c').value = selected.w_c.toFixed(2); // W/C ratio usually stays strict
+            
+            updateNCA(); // Auto-calculate the NCA read-only box
             
             // Physical properties should match exact mold sizes, no noise
             document.getElementById('cs_area').value = selected.cs_area;
