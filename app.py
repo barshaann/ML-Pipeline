@@ -33,8 +33,7 @@ class PredictionInput(BaseModel):
     slump: Optional[float] = None
     width_dia: Optional[float] = None
     length: Optional[float] = None
-    cs_area: Optional[float] = None
-    ultimate_load: Optional[float] = None
+    cs_area: float = Field(..., description="Cross-sectional area (required for calculating strength)")
 
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
@@ -64,7 +63,7 @@ def predict_strength(input_data: PredictionInput):
 
     data_dict = input_data.model_dump()
 
-    required_fields = ["cement", "sand", "water", "nca", "w_c"]
+    required_fields = ["cement", "sand", "water", "nca", "w_c", "cs_area"]
     for field in required_fields:
         val = data_dict.get(field)
         if val is None or val <= 0:
@@ -73,6 +72,13 @@ def predict_strength(input_data: PredictionInput):
     df = pd.DataFrame([data_dict])
     try:
         prediction = model_pipeline.predict(df)
-        return {"predicted_strength": float(prediction[0])}
+        ultimate_load = float(prediction[0])
+        # Calculate Compressive Strength: Ultimate Load (kN) * 1000 / CS Area (mm2)
+        # Note: If area is mm2 and load is kN, (kN * 1000) / mm2 = N/mm2 = MPa
+        strength = (ultimate_load * 1000) / data_dict["cs_area"]
+        return {
+            "predicted_ultimate_load": round(ultimate_load, 2),
+            "predicted_strength": round(strength, 4)
+        }
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Prediction error: {str(e)}")

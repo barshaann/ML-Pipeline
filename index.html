@@ -103,6 +103,15 @@
             from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        
+        @keyframes spinClick {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.1); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+        .spin-once {
+            animation: spinClick 0.65s ease-in-out;
+        }
 
         .header {
             display: flex;
@@ -362,7 +371,11 @@
 
                 <!-- Card 2 -->
                 <div class="card">
-                    <div class="card-header"><i class="ph ph-faders"></i> Physical Properties (Optional)</div>
+                    <div class="card-header"><i class="ph ph-faders"></i> Physical Properties</div>
+                    <div class="input-group">
+                        <input type="number" id="cs_area" step="any" required placeholder=" ">
+                        <label for="cs_area">C/S Area (Required)</label>
+                    </div>
                     <div class="input-group">
                         <input type="number" id="shape_factor" step="any" placeholder=" ">
                         <label for="shape_factor">Shape Factor</label>
@@ -382,14 +395,6 @@
                     <div class="input-group">
                         <input type="number" id="length" step="any" placeholder=" ">
                         <label for="length">Length</label>
-                    </div>
-                    <div class="input-group">
-                        <input type="number" id="cs_area" step="any" placeholder=" ">
-                        <label for="cs_area">C/S Area</label>
-                    </div>
-                    <div class="input-group">
-                        <input type="number" id="ultimate_load" step="any" placeholder=" ">
-                        <label for="ultimate_load">Ultimate Load</label>
                     </div>
                 </div>
 
@@ -421,6 +426,11 @@
             html.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
             updateIcon(newTheme);
+            
+            // Add spinning animation
+            icon.classList.remove('spin-once');
+            void icon.offsetWidth; // Trigger reflow
+            icon.classList.add('spin-once');
         });
         function updateIcon(theme) {
             icon.className = theme === 'dark' ? 'ph ph-sun' : 'ph ph-moon';
@@ -430,18 +440,26 @@
         document.getElementById('predictionForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const requiredFields = ['cement', 'sand', 'water', 'nca', 'rca', 'w_c'];
-            const hasZero = requiredFields.some(id => {
+            const requiredStrict = ['cement', 'sand', 'water', 'nca', 'w_c', 'cs_area'];
+            const hasZero = requiredStrict.some(id => {
                 const val = parseFloat(document.getElementById(id).value);
                 return isNaN(val) || val <= 0;
             });
+            
+            const rcaVal = parseFloat(document.getElementById('rca').value);
+            const rcaInvalid = isNaN(rcaVal) || rcaVal < 0;
 
             const resultDiv = document.getElementById('result');
             resultDiv.style.display = 'block';
             setTimeout(() => resultDiv.classList.add('show'), 10);
 
             if (hasZero) {
-                resultDiv.innerHTML = `<strong style="color:#ef4444;">Invalid Input: All mixture proportion fields must have a value greater than zero.</strong>`;
+                resultDiv.innerHTML = `<strong style="color:#ef4444;">Invalid Input: Cement, Sand, Water, NCA, W/C Ratio, and C/S Area MUST be greater than 0.</strong>`;
+                resultDiv.className = 'error show';
+                return;
+            }
+            if (rcaInvalid) {
+                resultDiv.innerHTML = `<strong style="color:#ef4444;">Invalid Input: Recycled Aggregate (RCA) cannot be negative.</strong>`;
                 resultDiv.className = 'error show';
                 return;
             }
@@ -455,9 +473,10 @@
                 water:  parseFloat(document.getElementById('water').value),
                 nca:    parseFloat(document.getElementById('nca').value),
                 rca:    parseFloat(document.getElementById('rca').value),
-                w_c:    parseFloat(document.getElementById('w_c').value)
+                w_c:    parseFloat(document.getElementById('w_c').value),
+                cs_area: parseFloat(document.getElementById('cs_area').value)
             };
-            const optionals = ['shape_factor', 'density', 'slump', 'width_dia', 'length', 'cs_area', 'ultimate_load'];
+            const optionals = ['shape_factor', 'density', 'slump', 'width_dia', 'length'];
             optionals.forEach(opt => {
                 const val = document.getElementById(opt).value;
                 if (val !== '') data[opt] = parseFloat(val);
@@ -471,7 +490,10 @@
                 });
                 const resultData = await response.json();
                 if (response.ok) {
-                    resultDiv.innerHTML = `Predicted Strength: <strong style="color: #10b981; text-shadow: 0 0 10px rgba(16,185,129,0.5);">${resultData.predicted_strength.toFixed(4)}</strong>`;
+                    resultDiv.innerHTML = `
+                        <div style="font-size: 1rem; color: var(--text-secondary); margin-bottom: 8px;">Predicted Ultimate Load: <strong>${resultData.predicted_ultimate_load.toFixed(2)} kN</strong></div>
+                        <div style="font-size: 1.4rem;">Predicted Strength: <strong style="color: #10b981; text-shadow: 0 0 10px rgba(16,185,129,0.5);">${resultData.predicted_strength.toFixed(2)} MPa</strong></div>
+                    `;
                     resultDiv.className = 'success show';
                 } else {
                     let errorMsg = resultData.detail;
@@ -485,23 +507,44 @@
             }
         });
 
-        // Random Data Generator
+        // Realistic Sample Data Generator
         document.getElementById('randomBtn').addEventListener('click', function() {
-            const randomInRange = (min, max, decimals=2) => parseFloat((Math.random() * (max - min) + min).toFixed(decimals));
-            const fields = {
-                cement: [277, 420, 1], sand: [275, 885, 1], water: [111, 258, 1],
-                nca: [100, 1200, 1], rca: [0.1, 1, 2], w_c: [0.40, 0.70, 2],
-                shape_factor: [2, 10, 1], density: [2233, 2600, 1], slump: [50, 715, 0],
-                width_dia: [100, 240, 0], length: [200, 2400, 0],
-                cs_area: [7854, 57600, 0], ultimate_load: [196, 4064, 1]
-            };
-            for (const [id, [min, max, dec]] of Object.entries(fields)) {
-                document.getElementById(id).value = randomInRange(min, max, dec);
-            }
-            document.getElementById('result').classList.remove('show');
+            // Real profiles from the dataset to ensure physically realistic combinations
+            const profiles = [
+                { cement: 407.0, sand: 639.0, water: 172.0, nca: 1116.0, rca: 0.0, w_c: 0.42, cs_area: 57600.0, shape_factor: 10.0, density: 2400.0, slump: 170.0, width_dia: 240.0, length: 2400.0 },
+                { cement: 380.0, sand: 650.0, water: 171.0, nca: 1200.0, rca: 0.0, w_c: 0.45, cs_area: 17671.0, shape_factor: 2.0, density: 2400.0, slump: 75.0, width_dia: 150.0, length: 300.0 },
+                { cement: 277.16, sand: 343.11, water: 110.86, nca: 482.66, rca: 0.0, w_c: 0.4, cs_area: 7854.0, shape_factor: 2.0, density: 2600.0, slump: 87.5, width_dia: 100.0, length: 200.0 },
+                { cement: 372.73, sand: 726.69, water: 197.17, nca: 1031.46, rca: 0.06, w_c: 0.53, cs_area: 17671.0, shape_factor: 2.0, density: 2316.0, slump: 104.0, width_dia: 150.0, length: 300.0 }
+            ];
+            
+            const selected = profiles[Math.floor(Math.random() * profiles.length)];
+            
+            // Add a tiny bit of realistic noise (-3% to +3%) to mixture proportions
+            const noise = (val) => val === 0 ? 0 : val * (1 + (Math.random() * 0.06 - 0.03));
+            
+            // In the dataset, RCA is provided as a replacement ratio. Here are ALL the exact ratios from your dataset!
+            const rcaRatios = [0.0, 0.02, 0.04, 0.06, 0.08, 0.10, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50, 0.60, 0.75, 1.0];
+            const rcaRatio = rcaRatios[Math.floor(Math.random() * rcaRatios.length)];
+            
+            document.getElementById('cement').value = noise(selected.cement).toFixed(1);
+            document.getElementById('sand').value = noise(selected.sand).toFixed(1);
+            document.getElementById('water').value = noise(selected.water).toFixed(1);
+            document.getElementById('nca').value = noise(selected.nca).toFixed(1);
+            document.getElementById('rca').value = rcaRatio.toFixed(2);
+            document.getElementById('w_c').value = selected.w_c.toFixed(2); // W/C ratio usually stays strict
+            
+            // Physical properties should match exact mold sizes, no noise
+            document.getElementById('cs_area').value = selected.cs_area;
+            document.getElementById('shape_factor').value = selected.shape_factor;
+            document.getElementById('density').value = noise(selected.density).toFixed(1);
+            document.getElementById('slump').value = noise(selected.slump).toFixed(1);
+            document.getElementById('width_dia').value = selected.width_dia;
+            document.getElementById('length').value = selected.length;
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.classList.remove('show');
             setTimeout(() => {
-                if (!document.getElementById('result').classList.contains('show'))
-                    document.getElementById('result').style.display = 'none';
+                if (!resultDiv.classList.contains('show')) resultDiv.style.display = 'none';
             }, 400);
         });
     </script>
